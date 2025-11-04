@@ -11,7 +11,7 @@ export function ToolEmbed({
         src={src}
         className="w-full border-0"
         style={{ height }}
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts allow-same-origin allow-downloads allow-downloads-without-user-activation"
         loading="lazy"
         title="Embedded tool"
       />
