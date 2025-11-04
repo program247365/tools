@@ -1,0 +1,87 @@
+---
+title: Time Block Planner
+description: Visual time blocking tool with drag-and-drop interface for planning your day
+---
+
+import { ToolEmbed } from '@/components/ToolEmbed';
+
+# Time Block Planner
+
+A minimalist time blocking tool that lets you visually plan your day in 15-minute increments. Features a brutalist black-and-white design with intuitive drag-and-drop controls.
+
+## Overview
+
+Time Block Planner helps you organize your day by creating visual blocks of time for different activities. The interface is clean, simple, and focused on helping you plan without distraction.
+
+## How to Use
+
+### Creating Time Blocks
+
+1. **Click and drag** on the timeline to create a new time block
+2. **Enter a label** for your activity (e.g., "MEETING", "WORK", "BREAK")
+3. **Adjust times** if needed using the time inputs
+4. **Save** to add the block to your schedule
+
+### Editing Time Blocks
+
+- **Click** on any block to edit its label and times
+- **Drag the top or bottom edges** to resize blocks
+- **Click and drag** the block itself to move it to a different time
+- **Click the × button** to delete a block
+- **Right-click** for quick delete
+
+### Quick Actions
+
+- Use the quick label buttons (**MEETING**, **WORK**, **BREAK**) for faster entry
+- Press **ESC** to cancel editing
+- **Shift-click** on a block to edit without delay
+- **Double-click** to always edit, even small blocks
+
+### Exporting Your Schedule
+
+Export your time blocks in two formats:
+
+- **Markdown** - Clean, readable format perfect for notes
+- **JSON** - Structured data with times in both formatted and minute values
+
+## Try It
+
+<ToolEmbed src="/tools/time-block-planner.html" height="800px" />
+
+## Features
+
+- ✅ **15-minute increments** - Precise time blocking
+- ✅ **Drag and drop** - Intuitive interface
+- ✅ **Resize blocks** - Adjust duration by dragging edges
+- ✅ **Move blocks** - Drag to reposition
+- ✅ **Quick labels** - Fast entry with preset buttons
+- ✅ **Export options** - Markdown and JSON formats
+- ✅ **No data collection** - Everything stays in your browser
+- ✅ **Touch-enabled** - Works great on mobile devices
+
+## Technical Details
+
+- **Technology**: Pure HTML, CSS, and JavaScript
+- **Styling**: Tailwind CSS via CDN
+- **Storage**: Client-side only, no server
+- **Export formats**: Markdown (.md) and JSON (.json)
+- **Browser compatibility**: Modern browsers (Chrome, Firefox, Safari, Edge)
+- **Mobile support**: Fully responsive with touch events
+
+## Keyboard Shortcuts
+
+- **ESC** - Cancel editing or selection
+- **Enter** - Save block when editing
+- **Shift + Click** - Edit block immediately
+
+## Tips
+
+1. **Plan ahead**: Start by blocking out fixed commitments
+2. **Color coding**: Alternate blocks use inverted colors for visual distinction
+3. **15-minute minimum**: All blocks are at least 15 minutes long
+4. **No overlaps**: The tool prevents scheduling conflicts automatically
+5. **Mobile friendly**: Use on any device to plan on the go
+
+## Privacy
+
+This tool runs entirely in your browser. No data is sent to any server, and nothing is stored in the cloud. Your schedule is private and local to your device.

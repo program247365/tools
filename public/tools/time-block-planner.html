@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIME BLOCKS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+        
+        * {
+            font-family: 'Space Mono', monospace;
+        }
+        
+        body {
+            background: #000;
+        }
+        
+        .time-slot {
+            height: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background: #fff;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        .time-slot:nth-child(4n) {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Selection preview block */
+        .selection-preview {
+            position: absolute;
+            left: 80px;
+            right: 0;
+            border: 2px solid #000;
+            background: #000;
+            color: #fff;
+            pointer-events: none;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Uncommitted block style */
+        .uncommitted-block {
+            position: absolute;
+            left: 80px;
+            right: 0;
+            border: 2px dashed #000;
+            background: rgba(0, 0, 0, 0.1);
+            color: #000;
+            z-index: 8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Floating input form */
+        .floating-input {
+            position: absolute;
+            left: 80px;
+            right: 0;
+            max-width: 350px;
+            background: #fff;
+            border: 3px solid #000;
+            padding: 12px;
+            z-index: 30;
+            box-shadow: 0 4px 0 #000;
+        }
+        
+        .floating-input input {
+            width: 100%;
+            padding: 6px;
+            border: 2px solid #000;
+            background: #fff;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        
+        .floating-input input:focus {
+            outline: none;
+            background: #000;
+            color: #fff;
+        }
+        
+        .time-inputs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        
+        .time-inputs input {
+            flex: 1;
+            margin-bottom: 0;
+            font-size: 11px;
+            padding: 4px;
+        }
+        
+        .floating-input-buttons {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        
+        .floating-input-btn {
+            padding: 4px 8px;
+            border: 1px solid #000;
+            background: #fff;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            flex: 1;
+        }
+        
+        .floating-input-btn:hover {
+            background: #000;
+            color: #fff;
+        }
+        
+        .floating-input-btn.primary {
+            background: #000;
+            color: #fff;
+        }
+        
+        .floating-input-btn.primary:hover {
+            background: #fff;
+            color: #000;
+        }
+        
+        @media (max-width: 640px) {
+            .selection-preview,
+            .uncommitted-block,
+            .drag-preview {
+                left: 60px;
+                font-size: 10px;
+            }
+            .floating-input {
+                left: 60px;
+            }
+            .time-block.dragging {
+                left: 60px;
+            }
+        }
+        
+        .time-block {
+            position: absolute;
+            left: 80px;
+            right: 0;
+            border: 2px solid #000;
+            background: #000;
+            color: #fff;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            overflow: hidden;
+            cursor: grab;
+            z-index: 10;
+            transition: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            user-select: none;
+            min-height: 15px; /* Match minimum 15-minute duration */
+        }
+        
+        /* Delete button */
+        .delete-btn {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 14px;
+            height: 14px;
+            padding: 0;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 12px;
+            text-align: center;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 5;
+        }
+        
+        .time-block:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .delete-btn:hover {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+        
+        .time-block.inverted .delete-btn {
+            color: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+        }
+        
+        .time-block.inverted .delete-btn:hover {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+        
+        /* Resize handles - subtle visual indicators */
+        .time-block::before,
+        .time-block::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+        
+        .time-block::before {
+            top: 2px;
+        }
+        
+        .time-block::after {
+            bottom: 2px;
+        }
+        
+        /* Hide resize handles for minimum-size blocks */
+        .time-block.minimal::before,
+        .time-block.minimal::after {
+            display: none;
+        }
+        
+        .time-block:hover::before,
+        .time-block:hover::after {
+            width: 50px;
+            background: rgba(255, 255, 255, 0.6);
+        }
+        
+        .time-block.inverted::before,
+        .time-block.inverted::after {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .time-block.inverted:hover::before,
+        .time-block.inverted:hover::after {
+            background: rgba(0, 0, 0, 0.4);
+        }
+        
+        .time-block.resize-top {
+            cursor: ns-resize;
+        }
+        
+        .time-block.resize-bottom {
+            cursor: ns-resize;
+        }
+        
+        /* Minimal blocks can only be edited, not resized */
+        .time-block.minimal {
+            cursor: pointer !important;
+        }
+        
+        .time-block.minimal:active {
+            cursor: pointer !important;
+        }
+        
+        .time-block.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .time-block.dragging .delete-btn,
+        .time-block.resizing .delete-btn {
+            display: none;
+        }
+        
+        .time-block.resizing {
+            opacity: 0.7;
+            cursor: ns-resize;
+        }
+        
+        .time-block:hover {
+            background: #fff;
+            color: #000;
+            z-index: 20;
+            cursor: grab;
+        }
+        
+        .time-block:active {
+            cursor: grabbing;
+        }
+        
+        .time-block.inverted {
+            background: #fff;
+            color: #000;
+        }
+        
+        .time-block.inverted:hover {
+            background: #000;
+            color: #fff;
+            cursor: grab;
+        }
+        
+        .time-block.inverted:active {
+            cursor: grabbing;
+        }
+        
+        .time-block.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .drag-preview {
+            position: absolute;
+            left: 80px;
+            right: 0;
+            border: 2px dashed #000;
+            background: rgba(0, 0, 0, 0.2);
+            color: #000;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            z-index: 25;
+        }
+        
+        .hour-container {
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+        
+        .time-grid {
+            position: relative;
+            user-select: none;
+            background: #fff;
+            border: 2px solid #000;
+        }
+        
+        .btn-primary {
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 8px 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+            transition: none;
+        }
+        
+        .btn-primary:hover {
+            background: #fff;
+            color: #000;
+        }
+        
+        .btn-secondary {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 8px 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+            transition: none;
+        }
+        
+        .btn-secondary:hover {
+            background: #000;
+            color: #fff;
+        }
+        
+        .btn-quick {
+            background: #fff;
+            color: #000;
+            border: 1px solid #000;
+            padding: 4px 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: none;
+        }
+        
+        .btn-quick:hover {
+            background: #000;
+            color: #fff;
+        }
+        
+        .hour-label {
+            position: absolute;
+            left: 0;
+            width: 70px;
+            text-align: right;
+            padding-right: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            top: 0;
+            transform: translateY(-50%);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 1;
+        }
+        
+        @media (max-width: 640px) {
+            .time-block {
+                left: 60px;
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+            
+            .hour-label {
+                width: 50px;
+                padding-right: 8px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-black p-4 sm:p-8">
+        <div class="max-w-5xl mx-auto">
+            <!-- Header -->
+            <div class="bg-white border-2 border-black mb-8 p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-wider">TIME BLOCKS</h1>
+                        <p class="text-xs mt-2 tracking-wider uppercase">DRAG TO CREATE / CLICK TO EDIT / DRAG EDGES TO RESIZE / × TO DELETE</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="exportToMarkdown()" class="btn-primary">
+                            MARKDOWN
+                        </button>
+                        <button onclick="exportToJSON()" class="btn-primary">
+                            JSON
+                        </button>
+                        <button onclick="clearAll()" class="btn-secondary">
+                            CLEAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Grid -->
+            <div class="time-grid" id="timeGrid">
+                <!-- Time slots will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isSelecting = false;
+        let startSlot = null;
+        let endSlot = null;
+        let timeBlocks = [];
+        let currentEditingBlock = null;
+        let touchStartY = null;
+        
+        // Block dragging variables
+        let isDraggingBlock = false;
+        let draggedBlock = null;
+        let dragStartY = null;
+        let dragOriginalStart = null;
+        let dragOriginalEnd = null;
+        let clickTimeout = null;
+        
+        // Block resizing variables
+        let isResizingBlock = false;
+        let resizedBlock = null;
+        let resizeType = null; // 'top' or 'bottom'
+        let resizeStartY = null;
+        let resizeOriginalStart = null;
+        let resizeOriginalEnd = null;
+
+        function initializeGrid() {
+            const grid = document.getElementById('timeGrid');
+            grid.innerHTML = '';
+            
+            for (let hour = 0; hour < 24; hour++) {
+                const hourDiv = document.createElement('div');
+                hourDiv.className = 'hour-container';
+                
+                // Hour label - positioned at the start of the hour
+                const hourLabel = document.createElement('div');
+                hourLabel.className = 'hour-label';
+                const displayHour = hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
+                hourLabel.textContent = displayHour;
+                hourDiv.appendChild(hourLabel);
+                
+                // Quarter-hour slots
+                for (let quarter = 0; quarter < 4; quarter++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'time-slot ml-[70px] sm:ml-[80px]';
+                    slot.dataset.hour = hour;
+                    slot.dataset.quarter = quarter;
+                    slot.dataset.time = `${hour * 60 + quarter * 15}`;
+                    slot.style.margin = '0';
+                    slot.style.padding = '0';
+                    
+                    // Add mouse events
+                    slot.addEventListener('mousedown', handleMouseDown);
+                    slot.addEventListener('mouseover', handleMouseOver);
+                    slot.addEventListener('mouseup', handleMouseUp);
+                    
+                    // Add touch events
+                    slot.addEventListener('touchstart', handleTouchStart);
+                    slot.addEventListener('touchmove', handleTouchMove);
+                    slot.addEventListener('touchend', handleTouchEnd);
+                    
+                    hourDiv.appendChild(slot);
+                }
+                
+                grid.appendChild(hourDiv);
+            }
+            
+            // Global mouse up to handle selections outside grid
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+            
+            // Global mouse/touch move and up for dragging and resizing blocks
+            document.addEventListener('mousemove', (e) => {
+                if (isDraggingBlock) {
+                    handleBlockDrag(e);
+                } else if (isResizingBlock) {
+                    handleBlockResize(e);
+                }
+            });
+            
+            document.addEventListener('mouseup', (e) => {
+                if (isDraggingBlock) {
+                    endBlockDrag(e);
+                } else if (isResizingBlock) {
+                    endBlockResize(e);
+                }
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (isDraggingBlock) {
+                    handleBlockDrag(e, true);
+                } else if (isResizingBlock) {
+                    handleBlockResize(e, true);
+                }
+            });
+            
+            document.addEventListener('touchend', (e) => {
+                if (isDraggingBlock) {
+                    endBlockDrag(e, true);
+                } else if (isResizingBlock) {
+                    endBlockResize(e, true);
+                }
+            });
+        }
+
+        function handleMouseDown(e) {
+            // Don't start new selection if dragging or resizing a block
+            if (isDraggingBlock || isResizingBlock) return;
+            if (e.button !== 0) return; // Only left click
+            e.preventDefault();
+            isSelecting = true;
+            startSlot = parseInt(e.currentTarget.dataset.time);
+            endSlot = startSlot;
+            updateSelection();
+        }
+
+        function handleMouseOver(e) {
+            if (!isSelecting || isDraggingBlock || isResizingBlock) return;
+            endSlot = parseInt(e.currentTarget.dataset.time);
+            updateSelection();
+        }
+
+        function handleMouseUp(e) {
+            if (!isSelecting || isDraggingBlock || isResizingBlock) return;
+            endSlot = parseInt(e.currentTarget.dataset.time);
+            finishSelection();
+        }
+
+        function handleGlobalMouseUp() {
+            if (isSelecting && !isDraggingBlock && !isResizingBlock) {
+                finishSelection();
+            }
+            // Make sure to clean up any preview that might be lingering
+            if (!isDraggingBlock && !isResizingBlock) {
+                const existingPreview = document.querySelector('.selection-preview');
+                if (existingPreview) {
+                    existingPreview.remove();
+                }
+            }
+        }
+
+        function handleTouchStart(e) {
+            // Don't start new selection if dragging or resizing a block
+            if (isDraggingBlock || isResizingBlock) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchStartY = touch.clientY;
+            isSelecting = true;
+            startSlot = parseInt(e.currentTarget.dataset.time);
+            endSlot = startSlot;
+            updateSelection();
+        }
+
+        function handleTouchMove(e) {
+            if (!isSelecting || isDraggingBlock || isResizingBlock) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (element && element.classList.contains('time-slot')) {
+                endSlot = parseInt(element.dataset.time);
+                updateSelection();
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!isSelecting || isDraggingBlock || isResizingBlock) return;
+            e.preventDefault();
+            finishSelection();
+        }
+
+        function updateSelection() {
+            const minTime = Math.min(startSlot, endSlot);
+            const maxTime = Math.max(startSlot, endSlot) + 15;
+            
+            // Remove existing preview
+            const existingPreview = document.querySelector('.selection-preview');
+            if (existingPreview) {
+                existingPreview.remove();
+            }
+            
+            // Create preview block with time range
+            if (isSelecting) {
+                const previewBlock = document.createElement('div');
+                previewBlock.className = 'selection-preview';
+                
+                // Direct minute-to-pixel mapping
+                previewBlock.style.top = `${minTime}px`;
+                previewBlock.style.height = `${maxTime - minTime}px`;
+                
+                // Format and display the time range
+                const startTimeStr = formatTime(minTime);
+                const endTimeStr = formatTime(maxTime);
+                previewBlock.textContent = `${startTimeStr} — ${endTimeStr}`;
+                
+                document.getElementById('timeGrid').appendChild(previewBlock);
+            }
+        }
+
+        function finishSelection() {
+            if (!isSelecting) return;
+            
+            const minTime = Math.min(startSlot, endSlot);
+            const maxTime = Math.max(startSlot, endSlot) + 15; // Add 15 minutes to include the last slot
+            
+            // Check for overlaps
+            const hasOverlap = timeBlocks.some(block => {
+                return (minTime < block.end && maxTime > block.start);
+            });
+            
+            if (!hasOverlap && maxTime > minTime) {
+                currentEditingBlock = { start: minTime, end: maxTime, label: '' };
+                
+                // Clear selection preview
+                const existingPreview = document.querySelector('.selection-preview');
+                if (existingPreview) {
+                    existingPreview.remove();
+                }
+                
+                // Show uncommitted block
+                showUncommittedBlock();
+                
+                // Show floating input
+                showFloatingInput();
+            } else {
+                // Clear selection preview if overlapping or invalid
+                const existingPreview = document.querySelector('.selection-preview');
+                if (existingPreview) {
+                    existingPreview.remove();
+                }
+            }
+            
+            isSelecting = false;
+            startSlot = null;
+            endSlot = null;
+        }
+        
+        function showUncommittedBlock() {
+            // Remove any existing uncommitted block
+            const existing = document.querySelector('.uncommitted-block');
+            if (existing) existing.remove();
+            
+            if (!currentEditingBlock) return;
+            
+            const blockElement = document.createElement('div');
+            blockElement.className = 'uncommitted-block';
+            blockElement.style.top = `${currentEditingBlock.start}px`;
+            blockElement.style.height = `${currentEditingBlock.end - currentEditingBlock.start}px`;
+            
+            const startTime = formatTime(currentEditingBlock.start);
+            const endTime = formatTime(currentEditingBlock.end);
+            blockElement.textContent = `${startTime} — ${endTime}`;
+            
+            document.getElementById('timeGrid').appendChild(blockElement);
+        }
+        
+        function showFloatingInput() {
+            // Remove any existing floating input
+            const existing = document.querySelector('.floating-input');
+            if (existing) existing.remove();
+            
+            if (!currentEditingBlock) return;
+            
+            const floatingInput = document.createElement('div');
+            floatingInput.className = 'floating-input';
+            
+            // Position it above the uncommitted block (or below if too close to top)
+            const blockTop = currentEditingBlock.start;
+            if (blockTop < 150) {
+                // Position below if too close to top
+                floatingInput.style.top = `${currentEditingBlock.end + 10}px`;
+            } else {
+                // Position above
+                floatingInput.style.top = `${blockTop - 130}px`;
+            }
+            
+            const startTime = formatTime(currentEditingBlock.start);
+            const endTime = formatTime(currentEditingBlock.end);
+            
+            floatingInput.innerHTML = `
+                <input type="text" id="floatingInput" placeholder="ENTER ACTIVITY..." value="${currentEditingBlock.label || ''}" title="Activity Name">
+                <div class="time-inputs">
+                    <input type="text" id="startTimeInput" value="${startTime}" placeholder="START TIME" title="Edit Start Time (e.g. 9:00 AM)">
+                    <input type="text" id="endTimeInput" value="${endTime}" placeholder="END TIME" title="Edit End Time (e.g. 10:30 AM)">
+                </div>
+                <div class="floating-input-buttons">
+                    <button class="floating-input-btn" onclick="setQuickLabel('MEETING')">MEETING</button>
+                    <button class="floating-input-btn" onclick="setQuickLabel('WORK')">WORK</button>
+                    <button class="floating-input-btn" onclick="setQuickLabel('BREAK')">BREAK</button>
+                </div>
+                <div class="floating-input-buttons" style="margin-top: 4px;">
+                    <button class="floating-input-btn" onclick="cancelLabel()">CANCEL</button>
+                    <button class="floating-input-btn primary" onclick="saveLabel()">SAVE</button>
+                </div>
+            `;
+            
+            document.getElementById('timeGrid').appendChild(floatingInput);
+            
+            // Focus the input
+            const input = document.getElementById('floatingInput');
+            setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 50);
+            
+            // Add enter key handler to all inputs
+            const allInputs = floatingInput.querySelectorAll('input');
+            allInputs.forEach(inp => {
+                inp.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        saveLabel();
+                    }
+                });
+                
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        cancelLabel();
+                    }
+                });
+            });
+            
+            // Add time change handlers
+            document.getElementById('startTimeInput').addEventListener('change', updateTimeFromInput);
+            document.getElementById('endTimeInput').addEventListener('change', updateTimeFromInput);
+        }
+
+        function cancelLabel() {
+            // Show any hidden blocks that were being edited
+            const hiddenBlocks = document.querySelectorAll('.time-block[data-editing="true"]');
+            hiddenBlocks.forEach(b => {
+                b.style.display = '';
+                b.removeAttribute('data-editing');
+            });
+            
+            // Remove uncommitted block and floating input
+            const uncommitted = document.querySelector('.uncommitted-block');
+            if (uncommitted) uncommitted.remove();
+            
+            const floatingInput = document.querySelector('.floating-input');
+            if (floatingInput) floatingInput.remove();
+            
+            currentEditingBlock = null;
+        }
+
+        function setQuickLabel(label) {
+            const input = document.getElementById('floatingInput');
+            if (input) {
+                input.value = label;
+                input.focus();
+            }
+        }
+
+        function saveLabel() {
+            const input = document.getElementById('floatingInput');
+            const startInput = document.getElementById('startTimeInput');
+            const endInput = document.getElementById('endTimeInput');
+            
+            if (!input) return;
+            
+            const label = input.value.trim().toUpperCase();
+            
+            // Parse times if they exist
+            if (startInput && endInput) {
+                const newStart = parseTime(startInput.value);
+                const newEnd = parseTime(endInput.value);
+                
+                if (newStart !== null && newEnd !== null && newStart < newEnd) {
+                    currentEditingBlock.start = newStart;
+                    currentEditingBlock.end = newEnd;
+                }
+            }
+            
+            if (label && currentEditingBlock) {
+                currentEditingBlock.label = label;
+                
+                // Check for overlaps with the new times
+                const hasOverlap = timeBlocks.some(block => {
+                    if (currentEditingBlock.id && block.id === currentEditingBlock.id) return false;
+                    return (currentEditingBlock.start < block.end && currentEditingBlock.end > block.start);
+                });
+                
+                if (!hasOverlap) {
+                    // If editing existing block, remove it first
+                    if (currentEditingBlock.id) {
+                        timeBlocks = timeBlocks.filter(b => b.id !== currentEditingBlock.id);
+                    }
+                    
+                    currentEditingBlock.id = Date.now();
+                    timeBlocks.push(currentEditingBlock);
+                    timeBlocks.sort((a, b) => a.start - b.start);
+                    renderTimeBlocks();
+                } else {
+                    alert('TIME CONFLICT - PLEASE CHOOSE DIFFERENT TIMES');
+                    return;
+                }
+            }
+            
+            // Clean up
+            cancelLabel();
+        }
+
+        function renderTimeBlocks() {
+            // Remove existing blocks
+            document.querySelectorAll('.time-block').forEach(block => block.remove());
+            
+            timeBlocks.forEach((block, index) => {
+                const blockElement = document.createElement('div');
+                const duration = block.end - block.start;
+                
+                // Alternate between normal and inverted styles
+                blockElement.className = `time-block ${index % 2 === 1 ? 'inverted' : ''}`;
+                
+                // Add class for small blocks
+                if (duration <= 15) {
+                    blockElement.className += ' minimal';
+                } else if (duration <= 30) {
+                    blockElement.className += ' small';
+                }
+                
+                // Direct mapping: 1 minute = 1 pixel
+                blockElement.style.top = `${block.start}px`;
+                blockElement.style.height = `${duration}px`;
+                
+                // Adjust padding for very small blocks
+                if (duration <= 30) {
+                    blockElement.style.padding = '2px 4px';
+                    blockElement.style.fontSize = '9px';
+                }
+                
+                const startTime = formatTime(block.start);
+                const endTime = formatTime(block.end);
+                
+                // For very small blocks, show only the label
+                if (duration <= 15) {
+                    blockElement.innerHTML = `
+                        <div style="font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${block.label}</div>
+                        <button class="delete-btn">×</button>
+                    `;
+                } else {
+                    blockElement.innerHTML = `
+                        <div style="font-weight: 700;">${block.label}</div>
+                        <div style="font-size: 10px; margin-top: 2px; opacity: 0.8;">${startTime} — ${endTime}</div>
+                        <button class="delete-btn">×</button>
+                    `;
+                }
+                
+                // Get the delete button and add click handler
+                const deleteBtn = blockElement.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Delete without confirmation when using the button
+                    timeBlocks = timeBlocks.filter(b => b.id !== block.id);
+                    renderTimeBlocks();
+                });
+                
+                // Prevent delete button from triggering drag/resize
+                deleteBtn.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                });
+                deleteBtn.addEventListener('touchstart', (e) => {
+                    e.stopPropagation();
+                });
+                
+                // Mouse events
+                blockElement.addEventListener('mousemove', (e) => {
+                    if (isDraggingBlock || isResizingBlock) return;
+                    
+                    // Minimal blocks always show pointer cursor
+                    if (blockElement.classList.contains('minimal')) {
+                        blockElement.style.cursor = 'pointer';
+                        return;
+                    }
+                    
+                    // Don't change cursor if hovering over delete button
+                    if (e.target.classList.contains('delete-btn')) {
+                        blockElement.style.cursor = 'default';
+                        return;
+                    }
+                    
+                    const zone = detectEdgeZone(e, blockElement);
+                    if (zone === 'top' || zone === 'bottom') {
+                        blockElement.style.cursor = 'ns-resize';
+                    } else {
+                        blockElement.style.cursor = 'grab';
+                    }
+                });
+                
+                blockElement.addEventListener('mousedown', (e) => {
+                    if (e.button !== 0) return; // Only left click
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Minimal blocks (15 min) - click always edits
+                    if (blockElement.classList.contains('minimal')) {
+                        editBlock(block);
+                        return;
+                    }
+                    
+                    // Shift-click always edits
+                    if (e.shiftKey) {
+                        editBlock(block);
+                        return;
+                    }
+                    
+                    const zone = detectEdgeZone(e, blockElement);
+                    
+                    if (zone === 'top' || zone === 'bottom') {
+                        // Start resize immediately
+                        startBlockResize(block, zone, e);
+                    } else {
+                        // Use timeout for drag to allow for click
+                        clickTimeout = setTimeout(() => {
+                            startBlockDrag(block, e);
+                        }, 150);
+                    }
+                });
+                
+                blockElement.addEventListener('mouseup', (e) => {
+                    // Skip for minimal blocks as they handle edit on mousedown
+                    if (blockElement.classList.contains('minimal')) {
+                        return;
+                    }
+                    
+                    if (clickTimeout) {
+                        clearTimeout(clickTimeout);
+                        clickTimeout = null;
+                        // It was a click, not a drag
+                        if (!isDraggingBlock && !isResizingBlock) {
+                            editBlock(block);
+                        }
+                    }
+                });
+                
+                // Double-click always edits (for all blocks including minimal)
+                blockElement.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (clickTimeout) {
+                        clearTimeout(clickTimeout);
+                        clickTimeout = null;
+                    }
+                    editBlock(block);
+                });
+                
+                // Touch events
+                blockElement.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Minimal blocks (15 min) - tap always edits
+                    if (blockElement.classList.contains('minimal')) {
+                        editBlock(block);
+                        return;
+                    }
+                    
+                    const zone = detectEdgeZone(e, blockElement, true);
+                    
+                    if (zone === 'top' || zone === 'bottom') {
+                        // Start resize immediately
+                        startBlockResize(block, zone, e, true);
+                    } else {
+                        // Use timeout for drag to allow for tap
+                        clickTimeout = setTimeout(() => {
+                            startBlockDrag(block, e, true);
+                        }, 150);
+                    }
+                });
+                
+                blockElement.addEventListener('touchend', (e) => {
+                    // Skip for minimal blocks as they handle edit on touchstart
+                    if (blockElement.classList.contains('minimal')) {
+                        return;
+                    }
+                    
+                    if (clickTimeout) {
+                        clearTimeout(clickTimeout);
+                        clickTimeout = null;
+                        // It was a tap, not a drag
+                        if (!isDraggingBlock && !isResizingBlock) {
+                            editBlock(block);
+                        }
+                    }
+                });
+                
+                blockElement.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    deleteBlock(block.id);
+                });
+                
+                document.getElementById('timeGrid').appendChild(blockElement);
+            });
+        }
+
+        function detectEdgeZone(e, blockElement, isTouch = false) {
+            const rect = blockElement.getBoundingClientRect();
+            const y = isTouch ? e.touches[0].clientY : e.clientY;
+            const relativeY = y - rect.top;
+            const blockHeight = rect.height;
+            
+            // For 15-minute blocks (15px), clicking anywhere should edit
+            // This ensures minimum duration blocks remain editable
+            if (blockHeight <= 20) {
+                return 'middle';
+            }
+            
+            // For blocks between 20-45px, use smaller edge zones
+            let edgeZone = 8;
+            if (blockHeight > 45) {
+                edgeZone = 12; // Larger edge zone for bigger blocks
+            }
+            
+            if (relativeY <= edgeZone) {
+                return 'top';
+            } else if (relativeY >= blockHeight - edgeZone) {
+                return 'bottom';
+            } else {
+                return 'middle';
+            }
+        }
+        
+        function startBlockResize(block, resizeType, e, isTouch = false) {
+            isResizingBlock = true;
+            resizedBlock = block;
+            window.currentResizeType = resizeType; // Store globally to avoid 'this' issues
+            resizeOriginalStart = block.start;
+            resizeOriginalEnd = block.end;
+            
+            if (isTouch) {
+                resizeStartY = e.touches[0].clientY;
+            } else {
+                resizeStartY = e.clientY;
+            }
+            
+            // Add resizing class to the block
+            const blocks = document.querySelectorAll('.time-block');
+            blocks.forEach(b => {
+                if (parseInt(b.style.top) === block.start && 
+                    parseInt(b.style.height) === (block.end - block.start)) {
+                    b.classList.add('resizing');
+                }
+            });
+            
+            // Show resize preview
+            showDragPreview(block.start, block.end, block.label);
+        }
+        
+        function handleBlockResize(e, isTouch = false) {
+            if (!isResizingBlock || !resizedBlock) return;
+            
+            const currentY = isTouch ? e.touches[0].clientY : e.clientY;
+            const deltaY = currentY - resizeStartY;
+            
+            // Convert pixels to minutes (1 pixel = 1 minute)
+            const deltaMinutes = Math.round(deltaY);
+            
+            let newStart = resizeOriginalStart;
+            let newEnd = resizeOriginalEnd;
+            
+            if (window.currentResizeType === 'top') {
+                // Resizing from top - adjust start time
+                newStart = resizeOriginalStart + deltaMinutes;
+                // Snap to 15-minute increments
+                newStart = Math.round(newStart / 15) * 15;
+                // Don't let start go past end
+                if (newStart >= newEnd - 15) {
+                    newStart = newEnd - 15;
+                }
+                // Keep within day bounds
+                if (newStart < 0) newStart = 0;
+            } else if (window.currentResizeType === 'bottom') {
+                // Resizing from bottom - adjust end time
+                newEnd = resizeOriginalEnd + deltaMinutes;
+                // Snap to 15-minute increments
+                newEnd = Math.round(newEnd / 15) * 15;
+                // Don't let end go before start
+                if (newEnd <= newStart + 15) {
+                    newEnd = newStart + 15;
+                }
+                // Keep within day bounds
+                if (newEnd > 1440) newEnd = 1440;
+            }
+            
+            // Check for overlaps with other blocks
+            const hasOverlap = timeBlocks.some(block => {
+                if (block.id === resizedBlock.id) return false;
+                return (newStart < block.end && newEnd > block.start);
+            });
+            
+            if (!hasOverlap) {
+                showDragPreview(newStart, newEnd, resizedBlock.label);
+            }
+        }
+        
+        function endBlockResize(e, isTouch = false) {
+            if (!isResizingBlock || !resizedBlock) return;
+            
+            const currentY = isTouch ? e.changedTouches[0].clientY : e.clientY;
+            const deltaY = currentY - resizeStartY;
+            
+            // Convert pixels to minutes
+            const deltaMinutes = Math.round(deltaY);
+            
+            let newStart = resizeOriginalStart;
+            let newEnd = resizeOriginalEnd;
+            
+            if (window.currentResizeType === 'top') {
+                newStart = resizeOriginalStart + deltaMinutes;
+                newStart = Math.round(newStart / 15) * 15;
+                if (newStart >= newEnd - 15) {
+                    newStart = newEnd - 15;
+                }
+                if (newStart < 0) newStart = 0;
+            } else if (window.currentResizeType === 'bottom') {
+                newEnd = resizeOriginalEnd + deltaMinutes;
+                newEnd = Math.round(newEnd / 15) * 15;
+                if (newEnd <= newStart + 15) {
+                    newEnd = newStart + 15;
+                }
+                if (newEnd > 1440) newEnd = 1440;
+            }
+            
+            // Check for overlaps
+            const hasOverlap = timeBlocks.some(block => {
+                if (block.id === resizedBlock.id) return false;
+                return (newStart < block.end && newEnd > block.start);
+            });
+            
+            if (!hasOverlap && (newStart !== resizeOriginalStart || newEnd !== resizeOriginalEnd)) {
+                // Update the block
+                resizedBlock.start = newStart;
+                resizedBlock.end = newEnd;
+                renderTimeBlocks();
+            }
+            
+            // Clean up
+            const blocks = document.querySelectorAll('.time-block');
+            blocks.forEach(b => {
+                b.classList.remove('resizing');
+            });
+            
+            const preview = document.querySelector('.drag-preview');
+            if (preview) preview.remove();
+            
+            isResizingBlock = false;
+            resizedBlock = null;
+            window.currentResizeType = null;
+            resizeStartY = null;
+            resizeOriginalStart = null;
+            resizeOriginalEnd = null;
+        }
+        
+        function parseTime(timeStr) {
+            const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            if (!match) return null;
+            
+            let hour = parseInt(match[1]);
+            const minute = parseInt(match[2]);
+            const period = match[3].toUpperCase();
+            
+            if (period === 'PM' && hour !== 12) hour += 12;
+            if (period === 'AM' && hour === 12) hour = 0;
+            
+            return hour * 60 + minute;
+        }
+        
+        function updateTimeFromInput() {
+            const startInput = document.getElementById('startTimeInput');
+            const endInput = document.getElementById('endTimeInput');
+            
+            if (!startInput || !endInput) return;
+            
+            const newStart = parseTime(startInput.value);
+            const newEnd = parseTime(endInput.value);
+            
+            if (newStart !== null && newEnd !== null && newStart < newEnd) {
+                currentEditingBlock.start = newStart;
+                currentEditingBlock.end = newEnd;
+                showUncommittedBlock();
+            }
+        }
+        
+        function startBlockDrag(block, e, isTouch = false) {
+            isDraggingBlock = true;
+            draggedBlock = block;
+            dragOriginalStart = block.start;
+            dragOriginalEnd = block.end;
+            
+            if (isTouch) {
+                dragStartY = e.touches[0].clientY;
+            } else {
+                dragStartY = e.clientY;
+            }
+            
+            // Add dragging class to the block
+            const blocks = document.querySelectorAll('.time-block');
+            
+            blocks.forEach(b => {
+                if (parseInt(b.style.top) === block.start && 
+                    parseInt(b.style.height) === (block.end - block.start)) {
+                    b.classList.add('dragging');
+                }
+            });
+            
+            // Show drag preview
+            showDragPreview(block.start, block.end, block.label);
+        }
+        
+        function showDragPreview(start, end, label) {
+            // Remove any existing preview
+            const existingPreview = document.querySelector('.drag-preview');
+            if (existingPreview) existingPreview.remove();
+            
+            const preview = document.createElement('div');
+            preview.className = 'drag-preview';
+            
+            // Direct minute-to-pixel mapping
+            preview.style.top = `${start}px`;
+            preview.style.height = `${end - start}px`;
+            
+            const startTime = formatTime(start);
+            const endTime = formatTime(end);
+            preview.innerHTML = `
+                <div style="font-weight: 700;">${label}</div>
+                <div style="font-size: 10px; margin-top: 2px; opacity: 0.8;">${startTime} — ${endTime}</div>
+            `;
+            
+            document.getElementById('timeGrid').appendChild(preview);
+        }
+        
+        function handleBlockDrag(e, isTouch = false) {
+            if (!isDraggingBlock || !draggedBlock) return;
+            
+            const currentY = isTouch ? e.touches[0].clientY : e.clientY;
+            const deltaY = currentY - dragStartY;
+            
+            // Snap to 15-minute increments
+            const deltaMinutes = Math.round(deltaY / 15) * 15;
+            const duration = dragOriginalEnd - dragOriginalStart;
+            
+            let newStart = dragOriginalStart + deltaMinutes;
+            let newEnd = newStart + duration;
+            
+            // Keep within day bounds
+            if (newStart < 0) {
+                newStart = 0;
+                newEnd = duration;
+            }
+            if (newEnd > 1440) { // 24 hours * 60 minutes
+                newEnd = 1440;
+                newStart = newEnd - duration;
+            }
+            
+            // Check for overlaps with other blocks
+            const hasOverlap = timeBlocks.some(block => {
+                if (block.id === draggedBlock.id) return false;
+                return (newStart < block.end && newEnd > block.start);
+            });
+            
+            if (!hasOverlap) {
+                showDragPreview(newStart, newEnd, draggedBlock.label);
+            }
+        }
+        
+        function endBlockDrag(e, isTouch = false) {
+            if (!isDraggingBlock || !draggedBlock) return;
+            
+            const currentY = isTouch ? e.changedTouches[0].clientY : e.clientY;
+            const deltaY = currentY - dragStartY;
+            
+            // Snap to 15-minute increments
+            const deltaMinutes = Math.round(deltaY / 15) * 15;
+            const duration = dragOriginalEnd - dragOriginalStart;
+            
+            let newStart = dragOriginalStart + deltaMinutes;
+            let newEnd = newStart + duration;
+            
+            // Keep within day bounds
+            if (newStart < 0) {
+                newStart = 0;
+                newEnd = duration;
+            }
+            if (newEnd > 1440) {
+                newEnd = 1440;
+                newStart = newEnd - duration;
+            }
+            
+            // Check for overlaps
+            const hasOverlap = timeBlocks.some(block => {
+                if (block.id === draggedBlock.id) return false;
+                return (newStart < block.end && newEnd > block.start);
+            });
+            
+            if (!hasOverlap && (newStart !== dragOriginalStart)) {
+                // Update the block
+                draggedBlock.start = newStart;
+                draggedBlock.end = newEnd;
+                renderTimeBlocks();
+            }
+            
+            // Clean up
+            const blocks = document.querySelectorAll('.time-block');
+            blocks.forEach(b => {
+                b.classList.remove('dragging');
+            });
+            
+            const preview = document.querySelector('.drag-preview');
+            if (preview) preview.remove();
+            
+            isDraggingBlock = false;
+            draggedBlock = null;
+            dragStartY = null;
+            dragOriginalStart = null;
+            dragOriginalEnd = null;
+        }
+        
+        function formatTime(minutes) {
+            const hour = Math.floor(minutes / 60);
+            const min = minutes % 60;
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            return `${displayHour}:${min.toString().padStart(2, '0')} ${period}`;
+        }
+
+        function editBlock(block) {
+            currentEditingBlock = { ...block };
+            
+            // Hide the original block while editing
+            const blocks = document.querySelectorAll('.time-block');
+            
+            blocks.forEach(b => {
+                // Check if this is the block being edited by comparing position and height
+                if (parseInt(b.style.top) === block.start && 
+                    parseInt(b.style.height) === (block.end - block.start)) {
+                    b.style.display = 'none';
+                    b.setAttribute('data-editing', 'true');
+                }
+            });
+            
+            // Show the block as uncommitted while editing
+            showUncommittedBlock();
+            
+            // Show floating input with existing label
+            showFloatingInput();
+        }
+
+        function deleteBlock(id) {
+            if (confirm('DELETE THIS TIME BLOCK?')) {
+                timeBlocks = timeBlocks.filter(b => b.id !== id);
+                renderTimeBlocks();
+            }
+        }
+
+        function clearAll() {
+            if (confirm('CLEAR ALL TIME BLOCKS?')) {
+                timeBlocks = [];
+                renderTimeBlocks();
+            }
+        }
+
+        function exportToMarkdown() {
+            if (timeBlocks.length === 0) {
+                alert('NO TIME BLOCKS TO EXPORT');
+                return;
+            }
+            
+            let markdown = '# TIME BLOCKS\n\n';
+            timeBlocks.forEach(block => {
+                const startTime = formatTime(block.start);
+                const endTime = formatTime(block.end);
+                markdown += `- **${startTime} — ${endTime}**: ${block.label}\n`;
+            });
+            
+            downloadFile('time-blocks.md', markdown, 'text/markdown');
+        }
+
+        function exportToJSON() {
+            if (timeBlocks.length === 0) {
+                alert('NO TIME BLOCKS TO EXPORT');
+                return;
+            }
+            
+            const exportData = timeBlocks.map(block => ({
+                start: formatTime(block.start),
+                end: formatTime(block.end),
+                startMinutes: block.start,
+                endMinutes: block.end,
+                label: block.label,
+                duration: block.end - block.start
+            }));
+            
+            downloadFile('time-blocks.json', JSON.stringify(exportData, null, 2), 'application/json');
+        }
+
+        function downloadFile(filename, content, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Global keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // Cancel any label editing
+                cancelLabel();
+                
+                // Also clear any selection in progress
+                if (isSelecting) {
+                    isSelecting = false;
+                    startSlot = null;
+                    endSlot = null;
+                    const existingPreview = document.querySelector('.selection-preview');
+                    if (existingPreview) {
+                        existingPreview.remove();
+                    }
+                }
+            }
+        });
+
+        // Initialize the grid
+        initializeGrid();
+    </script>
+</body>
+</html>
