@@ -8,29 +8,29 @@ This project hosts self-contained web tools with comprehensive documentation. Ea
 
 ## Current Tools
 
-- **[Time Block Planner](http://localhost:3000/docs/tools/time-block-planner)** - Visual time blocking tool with drag-and-drop interface
+- **[Time Block Planner](http://localhost:3000/tools/time-block-planner)** - Visual time blocking tool with drag-and-drop interface
 
 ## Development
 
 ### Prerequisites
 
 - Node.js 20+
-- npm
+- [Bun](https://bun.sh)
 
 ### Getting Started
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Start development server
-npm run dev
+bun dev
 
 # Build for production
-npm run build
+bun run build
 
 # Start production server
-npm start
+bun start
 ```
 
 The development server runs at [http://localhost:3000](http://localhost:3000).
@@ -40,29 +40,26 @@ The development server runs at [http://localhost:3000](http://localhost:3000).
 ```
 .
 ├── app/                    # Next.js App Router
-│   ├── docs/              # Documentation routes
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Homepage
-├── content/
-│   └── docs/              # MDX documentation files
-│       ├── index.mdx      # Docs homepage
-│       └── tools/         # Tool documentation
+│   ├── [[...slug]]/       # Catch-all documentation routes
+│   ├── api/search/        # Search API endpoint
+│   └── layout.tsx         # Root layout with DocsLayout
+├── content/               # MDX documentation files
+│   ├── index.mdx          # Homepage
+│   └── tools/             # Tool documentation
 ├── components/            # React components
-│   └── ToolEmbed.tsx     # Component for embedding tools
+│   └── ToolEmbed.tsx      # Component for embedding tools
 ├── lib/
-│   └── source.ts         # Fumadocs content source
-├── public/
-│   └── tools/            # Static HTML tools
-└── docs/
-    └── plans/            # Project planning documents
+│   └── source.ts          # Fumadocs content source
+└── public/
+    └── tools/             # Static HTML tools
 ```
 
 ## Adding New Tools
 
 1. **Add the HTML file** to `public/tools/`
-2. **Create documentation** at `content/docs/tools/[tool-name].mdx`
-3. **Run MDX generation**: `npm run postinstall`
-4. **Update homepage** if desired in `app/page.tsx`
+2. **Create documentation** at `content/tools/[tool-name].mdx`
+3. **Run MDX generation**: `bun run postinstall`
+4. **Update homepage** if desired in `content/index.mdx`
 
 ### Tool Documentation Template
 

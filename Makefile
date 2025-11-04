@@ -7,26 +7,26 @@ help:
 	@echo "  make start       - Start production server (next start)"
 	@echo "  make lint        - Run linter (next lint)"
 	@echo "  make postinstall - Run postinstall script (fumadocs-mdx)"
-	@echo "  make install     - Install dependencies (npm install)"
+	@echo "  make install     - Install dependencies (bun install)"
 	@echo "  make clean       - Clean build artifacts"
 
 dev:
-	npx next dev
+	bunx --bun next dev
 
 build:
-	npx next build
+	bunx --bun next build
 
 start:
-	npx next start
+	bunx --bun next start
 
 lint:
-	npx next lint
+	bunx --bun next lint
 
 postinstall:
-	npx fumadocs-mdx
+	bunx fumadocs-mdx
 
 install:
-	npm install
+	bun install
 
 clean:
 	rm -rf .next node_modules

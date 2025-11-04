@@ -7,13 +7,13 @@ import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import { source } from '@/lib/source';
 
 export const metadata = {
-  title: 'tools.kbr.sh',
+  title: 'Tools',
   description: 'A collection of web-based utility tools',
 };
 
 const baseOptions: BaseLayoutProps = {
   nav: {
-    title: 'tools.kbr.sh',
+    title: 'Tools',
     transparentMode: 'top',
   },
 };
