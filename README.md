@@ -50,13 +50,13 @@ The development server runs at [http://localhost:3000](http://localhost:3000).
 │   └── ToolEmbed.tsx      # Component for embedding tools
 ├── lib/
 │   └── source.ts          # Fumadocs content source
-└── public/
-    └── tools/             # Static HTML tools
+└── public/                # Static files (HTML tools, etc.)
+    └── *.html             # Standalone HTML tools
 ```
 
 ## Adding New Tools
 
-1. **Add the HTML file** to `public/tools/`
+1. **Add the HTML file** to `public/[tool-name].html`
 2. **Create documentation** at `content/tools/[tool-name].mdx`
 3. **Run MDX generation**: `bun run postinstall`
 4. **Update homepage** if desired in `content/index.mdx`
@@ -81,7 +81,7 @@ Instructions...
 
 ## Try It
 
-<ToolEmbed src="/tools/tool-name.html" height="600px" />
+<ToolEmbed src="/tool-name.html" height="600px" />
 
 ## Features
 

@@ -11,16 +11,16 @@ help:
 	@echo "  make clean       - Clean build artifacts"
 
 dev:
-	bunx --bun next dev
+	bunx next dev
 
 build:
-	bunx --bun next build
+	bunx next build
 
 start:
-	bunx --bun next start
+	bunx next start
 
 lint:
-	bunx --bun next lint
+	bunx next lint
 
 postinstall:
 	bunx fumadocs-mdx
