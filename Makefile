@@ -14,7 +14,7 @@ dev:
 	bunx next dev
 
 build:
-	bunx next build
+	bun run build
 
 start:
 	bunx next start
