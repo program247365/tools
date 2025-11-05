@@ -6,7 +6,8 @@
       "Bash(npm install:*)",
       "Bash(make dev:*)",
       "Bash(npm run postinstall:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "WebFetch(domain:fumadocs.vercel.app)"
     ],
     "deny": [],
     "ask": []
