@@ -1,0 +1,129 @@
+---
+title: FFmpeg Video Tool
+description: Process videos entirely in your browser with FFmpeg WebAssembly - convert formats, compress, edit, and extract audio without uploading files.
+tags: video, conversion, compression, editing, ffmpeg
+---
+
+import { ToolEmbed } from '@/components/ToolEmbed';
+
+# FFmpeg Video Tool
+
+A powerful browser-based video processing tool that runs FFmpeg entirely on your computer using WebAssembly. No uploads, no server processing - your videos stay private and secure.
+
+## Features
+
+### 📦 Format Conversion
+Convert between popular video formats:
+- **MP4** - Universal compatibility
+- **WebM** - Web-optimized format
+- **AVI** - Classic video format
+- **MOV** - QuickTime format
+
+### 🗜️ Compression & Quality
+Optimize your videos for different use cases:
+- **Compress for Web** - Balanced quality and file size for web publishing
+- **High Quality** - Maximum quality with H.264 encoding
+- **Small File Size** - Aggressive compression for minimal file size
+
+### ✂️ Video Editing
+Simple editing operations:
+- **Resize** - Scale to 1080p, 720p, or 480p resolution
+- **Rotate** - Rotate video 90 degrees clockwise
+- **Trim** - Cut first 30 seconds of video
+
+### 🔊 Audio Operations
+Manage audio tracks:
+- **Extract Audio** - Save audio as MP3
+- **Remove Audio** - Create silent video
+- **Boost/Lower Audio** - Adjust volume by ±6dB
+
+## How It Works
+
+This tool uses **FFmpeg.wasm**, a complete port of the FFmpeg multimedia framework to WebAssembly. All processing happens directly in your browser:
+
+1. **Privacy First** - Your videos never leave your device
+2. **No Upload Limits** - Process files up to 2GB (browser memory limit)
+3. **First Use** - Downloads ~22MB FFmpeg library (cached for future use)
+4. **Processing Time** - Expect 20-50x slower than desktop FFmpeg
+
+## Usage Tips
+
+### Performance Expectations
+
+- **Small files (under 50MB)**: Processing takes 1-5 minutes
+- **Medium files (50-500MB)**: Processing takes 5-30 minutes
+- **Large files (over 500MB)**: Processing may take 30+ minutes
+
+For best results, work with files under 500MB. Large files can be processed but will take significant time.
+
+### Format Compatibility
+
+Input formats supported:
+- MP4, MOV, AVI, MKV, WebM
+- FLV, WMV, MPEG, 3GP
+- Most common video codecs (H.264, H.265, VP8, VP9, etc.)
+
+### Browser Compatibility
+
+Works in all modern browsers:
+- ✅ Chrome/Edge (recommended)
+- ✅ Firefox
+- ✅ Safari
+- ✅ Opera
+
+This tool uses the single-threaded version of FFmpeg.wasm, so no special server configuration is required.
+
+## Troubleshooting
+
+### Video Won't Load
+- Ensure file is under 2GB
+- Check that file is a valid video format
+- Try using a different browser
+
+### Processing Failed
+- Video might use unsupported codec
+- File might be corrupted
+- Try converting to MP4 first as a baseline
+
+### Browser Crashes or Freezes
+- File is too large for available memory
+- Close other tabs/applications
+- Try processing on a device with more RAM
+
+### Slow Processing
+This is normal! WebAssembly FFmpeg is significantly slower than native desktop FFmpeg. For large files or frequent processing, consider using desktop FFmpeg instead.
+
+## Technical Details
+
+- **Library**: FFmpeg.wasm v0.12.10
+- **Architecture**: Single-threaded WebAssembly
+- **Memory Limit**: 2GB maximum file size
+- **Storage**: Files processed in browser memory (no disk I/O)
+- **Security**: Sandboxed iframe with script permissions only
+
+## Try It Now
+
+<div className="not-prose -mt-4 mb-6">
+  <a href="/ffmpeg-video-tool.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm hover:text-fd-primary transition-colors">
+    Open in new window ↗
+  </a>
+</div>
+
+<ToolEmbed src="/ffmpeg-video-tool.html" height="900px" />
+
+## Alternative: Desktop FFmpeg
+
+For production workflows or large files, consider installing FFmpeg on your desktop:
+
+```bash
+# macOS (via Homebrew)
+brew install ffmpeg
+
+# Windows (via Chocolatey)
+choco install ffmpeg
+
+# Linux (Ubuntu/Debian)
+sudo apt install ffmpeg
+```
+
+Desktop FFmpeg is 20-50x faster and has no file size limits, but requires command-line knowledge. This browser tool is perfect for occasional use, learning, or when you need quick conversions without installing software.

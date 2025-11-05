@@ -47,11 +47,79 @@ Tools are standalone, self-contained HTML files that users interact with directl
 1. **HTML Storage**: Tools live as single-file HTML in `public/` directory (e.g., `public/time-block-planner.html`)
    - Tools should be self-contained (all JS/CSS/WASM inlined or bundled)
    - WASM-based tools should include the .wasm file inline or reference it from the same directory
+   - **Design Aesthetic**: All tools use a brutalist Jack Butcher style (details below)
 2. **Documentation**: Each tool has a corresponding MDX file in `content/tools/` that describes it
 3. **Embedding Component**: `components/ToolEmbed.tsx` provides an iframe wrapper with:
-   - Sandboxing for security (`allow-scripts allow-same-origin allow-downloads`)
+   - Sandboxing for security (`allow-scripts allow-same-origin allow-downloads allow-modals allow-forms`)
+     - `allow-modals` is required for file picker dialogs
+     - `allow-forms` is required for form inputs including file inputs
    - Configurable height
    - Lazy loading
+
+### Brutalist Jack Butcher Design System
+
+All tools should follow this consistent design aesthetic:
+
+**Typography:**
+- Font: `Space Mono` (monospace) from Google Fonts
+- Weight: 400 (regular) and 700 (bold)
+- All text: UPPERCASE with increased letter-spacing (0.5px - 2px)
+- Font sizes: 0.75em - 2.5em range
+- No decorative emojis in text (use simple symbols like ▶, ×, ✓, ▼)
+
+**Color Palette:**
+- Background: `#000` (pure black)
+- Foreground: `#fff` (pure white)
+- No gradients, no colors - only black and white
+- Inverted on hover: black background becomes white, white text becomes black
+
+**Layout & Spacing:**
+- Borders: 2px or 3px solid
+- No border-radius (sharp corners)
+- No box-shadows
+- Padding: 15px - 60px range
+- Margin: 10px - 30px range
+
+**Interaction States:**
+- No transitions (`transition: none`)
+- Hover: Invert colors (black ↔ white)
+- No transform animations
+- No opacity changes (except for subtle secondary text at 0.7-0.8)
+
+**Buttons:**
+- Background: `#000`, Border: `2px solid #fff`, Color: `#fff`
+- Hover: Background: `#fff`, Color: `#000`
+- Text: UPPERCASE, bold (700), letter-spacing: 0.5px - 1px
+- Disabled: Background: `#333`, Color: `#666`, Border: `#666`
+
+**Example CSS Structure:**
+```css
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+* {
+    font-family: 'Space Mono', monospace;
+}
+
+body {
+    background: #000;
+    color: #fff;
+}
+
+.btn {
+    background: #000;
+    color: #fff;
+    border: 2px solid #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: none;
+}
+
+.btn:hover {
+    background: #fff;
+    color: #000;
+}
+```
 
 Example tool documentation pattern:
 ```mdx
@@ -66,7 +134,15 @@ import { ToolEmbed } from '@/components/ToolEmbed';
 
 Description...
 
-<ToolEmbed src="/time-block-planner.html" height="600px" />
+## Try It Now
+
+<div className="not-prose -mt-4 mb-6">
+  <a href="/tool-name.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm hover:text-fd-primary transition-colors">
+    Open in new window ↗
+  </a>
+</div>
+
+<ToolEmbed src="/tool-name.html" height="600px" />
 ```
 
 ### Layout Structure
@@ -107,6 +183,16 @@ This project uses Tailwind CSS v4 with important configuration differences from 
 
    # My Tool
 
+   Description of the tool...
+
+   ## Try It Now
+
+   <div className="not-prose -mt-4 mb-6">
+     <a href="/my-tool.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm hover:text-fd-primary transition-colors">
+       Open in new window ↗
+     </a>
+   </div>
+
    <ToolEmbed src="/my-tool.html" height="600px" />
    ```
 3. Run `npm run postinstall` to regenerate MDX sources
@@ -129,3 +215,79 @@ This project uses Tailwind CSS v4 with important configuration differences from 
 - The `.source/` directory is auto-generated - never edit directly
 - Fumadocs uses a compile-time source generation approach, so MDX changes require running postinstall
 - All pages are statically generated at build time via `generateStaticParams()`
+
+## Self-Hosting Large Dependencies (e.g., FFmpeg.wasm)
+
+Some tools may use large external libraries that can have CORS issues when loaded from CDN. **Always self-host these files** in the `public/` directory.
+
+### File Organization Pattern
+
+- **JavaScript files** → `public/js/` directory
+- **WASM/binary files** → `public/` root directory
+- **Other assets** → `public/` root or appropriate subdirectories
+
+### Example: FFmpeg.wasm
+
+Download and organize ALL the files (main library + core files):
+```bash
+# Create js directory if it doesn't exist
+mkdir -p public/js
+
+# Download main FFmpeg library and chunks to public/js/
+cd public/js
+curl -O https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js
+curl -O https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js
+
+# Download core JavaScript files to public/js/
+curl -O https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js
+curl -O https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.worker.js
+
+# Download WASM file to public/ root
+cd ..
+curl -O https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm
+```
+
+This creates:
+- `public/js/ffmpeg.js` (~4KB - main library wrapper)
+- `public/js/814.ffmpeg.js` (~3KB - webpack chunk)
+- `public/js/ffmpeg-core.js` (~115KB - core JavaScript)
+- `public/js/ffmpeg-core.worker.js` (~60 bytes - worker)
+- `public/ffmpeg-core.wasm` (~32MB - WASM binary)
+
+Then reference from the HTML tool:
+```html
+<script src="/js/ffmpeg.js"></script>
+<script>
+    // Initialize FFmpeg
+    let FFmpeg = FFmpegWASM.FFmpeg;
+
+    // Helper to convert File to Uint8Array (fetchFile not exported in v0.12)
+    async function fileToUint8Array(file) {
+        return new Uint8Array(await file.arrayBuffer());
+    }
+</script>
+```
+
+And in the load() call:
+```javascript
+const ffmpeg = new FFmpeg();
+await ffmpeg.load({
+    coreURL: '/js/ffmpeg-core.js',
+    wasmURL: '/ffmpeg-core.wasm',
+    workerURL: '/js/ffmpeg-core.worker.js'
+});
+
+// Use fileToUint8Array instead of fetchFile
+const fileData = await fileToUint8Array(inputFile);
+await ffmpeg.writeFile('input', fileData);
+```
+
+**Note:** The v0.12 library does not export `fetchFile` - use `fileToUint8Array` helper instead.
+
+### Benefits of Self-Hosting
+
+- ✅ No CORS issues
+- ✅ Works in all contexts (iframe, standalone, localhost)
+- ✅ Faster load times (no CDN latency)
+- ✅ Works offline
+- ✅ Version control and consistency
