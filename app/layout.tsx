@@ -5,6 +5,7 @@ import { GeistSans } from 'geist/font/sans';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import { source } from '@/lib/source';
+import { SearchTagFixer } from '@/components/SearchTagFixer';
 
 export const metadata = {
   title: 'Tools',
@@ -27,6 +28,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={GeistSans.variable}>
       <body>
         <RootProvider>
+          <SearchTagFixer />
           <DocsLayout tree={source.pageTree} {...baseOptions}>
             {children}
           </DocsLayout>

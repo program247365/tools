@@ -2,6 +2,8 @@ import { source } from '@/lib/source';
 import type { Metadata } from 'next';
 import { DocsPage, DocsBody } from 'fumadocs-ui/page';
 import { notFound } from 'next/navigation';
+import { TagBadges } from '@/components/TagBadges';
+import type { CustomFrontmatter } from '@/lib/types';
 
 export default async function Page({
   params,
@@ -12,11 +14,16 @@ export default async function Page({
   const page = source.getPage(slug);
   if (!page) notFound();
 
-  const MDX = page.data.body;
+  const pageData = page.data as any;
+  const MDX = pageData.body;
+
+  // Access custom frontmatter from _exports
+  const frontmatter = pageData._exports?.frontmatter as CustomFrontmatter | undefined;
 
   return (
-    <DocsPage toc={page.data.toc} full={false}>
+    <DocsPage toc={pageData.toc} full={false}>
       <DocsBody>
+        <TagBadges tags={frontmatter?.tags} className="mb-6" />
         <MDX />
       </DocsBody>
     </DocsPage>

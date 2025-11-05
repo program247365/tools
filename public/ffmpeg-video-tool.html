@@ -126,6 +126,43 @@
             opacity: 0.7;
         }
 
+        .video-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #000;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .codec-warning {
+            display: none;
+            background: #000;
+            border: 2px solid #fff;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .codec-warning.active {
+            display: block;
+        }
+
+        .codec-warning strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .codec-warning ul {
+            margin-left: 20px;
+            line-height: 1.8;
+            font-size: 0.85em;
+        }
+
         .presets-section {
             margin: 30px 0;
         }
@@ -375,6 +412,17 @@
         <div class="file-info" id="fileInfo">
             <div class="file-name" id="fileName"></div>
             <div class="file-size" id="fileSize"></div>
+            <div class="video-info" id="videoInfo" style="display: none;"></div>
+        </div>
+
+        <div class="codec-warning" id="codecWarning">
+            <strong>⚠ HEVC/H.265 CODEC DETECTED</strong>
+            <div>This codec is very memory-intensive in WebAssembly. High risk of failure.</div>
+            <ul>
+                <li><strong>RECOMMENDED:</strong> Use "Copy to MP4 (Fast)" - minimal memory, no re-encoding</li>
+                <li>Avoid conversion or compression operations</li>
+                <li>For best results, use desktop FFmpeg instead</li>
+            </ul>
         </div>
 
         <div class="presets-section" id="presetsSection" style="display: none;">
@@ -494,6 +542,8 @@
         let outputData = null;
         let outputFileName = '';
         let isProcessing = false;
+        let videoCodec = '';
+        let isHEVC = false;
 
         // Elements
         const dropZone = document.getElementById('dropZone');
@@ -501,6 +551,8 @@
         const fileInfo = document.getElementById('fileInfo');
         const fileName = document.getElementById('fileName');
         const fileSize = document.getElementById('fileSize');
+        const videoInfo = document.getElementById('videoInfo');
+        const codecWarning = document.getElementById('codecWarning');
         const presetsSection = document.getElementById('presetsSection');
         const progressSection = document.getElementById('progressSection');
         const progressBar = document.getElementById('progressBar');
@@ -580,6 +632,82 @@
             }
         }
 
+        // Analyze video to detect codec
+        async function analyzeVideo() {
+            if (!ffmpeg || !inputFile) return;
+
+            let logOutput = '';
+            let logHandler = null;
+
+            try {
+                progressSection.classList.add('active');
+                updateProgress(10, 'Analyzing video...');
+
+                // Write input file
+                const fileData = await fileToUint8Array(inputFile);
+                await ffmpeg.writeFile('input', fileData);
+
+                updateProgress(30, 'Detecting codec...');
+
+                // Set up temporary log handler to capture video info
+                logHandler = ({ message }) => {
+                    logOutput += message + '\n';
+                };
+                ffmpeg.on('log', logHandler);
+
+                // Run ffmpeg -i to get video info (will "fail" but output info)
+                try {
+                    await ffmpeg.exec(['-i', 'input']);
+                } catch (e) {
+                    // Expected to fail, we just want the info logs
+                }
+
+                updateProgress(80, 'Parsing video info...');
+
+                // Parse the log output
+                const codecMatch = logOutput.match(/Video:\s+(\w+)/i);
+                const resolutionMatch = logOutput.match(/(\d{3,4}x\d{3,4})/);
+                const durationMatch = logOutput.match(/Duration:\s+(\d{2}:\d{2}:\d{2})/);
+
+                if (codecMatch) {
+                    videoCodec = codecMatch[1].toUpperCase();
+                    isHEVC = videoCodec.includes('HEVC') || videoCodec.includes('H265');
+
+                    let infoText = `Codec: ${videoCodec}`;
+                    if (resolutionMatch) infoText += ` | Resolution: ${resolutionMatch[1]}`;
+                    if (durationMatch) infoText += ` | Duration: ${durationMatch[1]}`;
+
+                    videoInfo.textContent = infoText;
+                    videoInfo.style.display = 'block';
+
+                    // Show warning for HEVC
+                    if (isHEVC) {
+                        codecWarning.classList.add('active');
+                    } else {
+                        codecWarning.classList.remove('active');
+                    }
+                } else {
+                    videoInfo.textContent = 'Codec: Unknown (could not detect)';
+                    videoInfo.style.display = 'block';
+                }
+
+                updateProgress(100, 'Analysis complete!');
+
+            } catch (error) {
+                console.error('Failed to analyze video:', error);
+                videoInfo.textContent = 'Could not detect codec (analysis failed)';
+                videoInfo.style.display = 'block';
+            } finally {
+                // Remove the temporary log handler
+                if (logHandler) {
+                    ffmpeg.off('log', logHandler);
+                }
+                setTimeout(() => {
+                    progressSection.classList.remove('active');
+                }, 1000);
+            }
+        }
+
         // File handling
         dropZone.addEventListener('click', (e) => {
             console.log('Drop zone clicked');
@@ -615,7 +743,7 @@
             }
         });
 
-        function handleFile(file) {
+        async function handleFile(file) {
             if (!file.type.startsWith('video/')) {
                 showError('Please select a video file');
                 return;
@@ -637,6 +765,18 @@
             presetsSection.style.display = 'block';
             hideError();
             hideOutput();
+            codecWarning.classList.remove('active');
+
+            // Load FFmpeg and analyze the video
+            try {
+                if (!ffmpeg) {
+                    await loadFFmpeg();
+                }
+                await analyzeVideo();
+            } catch (error) {
+                console.error('Failed to analyze video:', error);
+                // Don't block the user if analysis fails - they can still try to process
+            }
         }
 
         // Preset buttons
@@ -716,7 +856,7 @@
 
                 // Provide helpful hints for common errors
                 if (errorMsg.includes('out of bounds') || errorMsg.includes('memory')) {
-                    userMsg += '\n\nTip: This error often occurs with large files or complex codecs. Try:\n- A smaller video file\n- "Convert to MP4" preset (simpler encoding)\n- Reducing the video resolution first';
+                    userMsg += '\n\nMemory Error: FFmpeg.wasm ran out of memory processing this video.\n\nTry these options:\n1. Use "Copy to MP4 (Fast)" - no re-encoding, minimal memory\n2. Use "Trim First 30s" to reduce file size\n3. Try a different/smaller video file\n4. For HEVC/H.265 videos, use desktop FFmpeg instead';
                 }
 
                 showError(userMsg);
@@ -765,10 +905,14 @@
             inputFileName = '';
             outputData = null;
             outputFileName = '';
+            videoCodec = '';
+            isHEVC = false;
 
             fileInput.value = '';
             dropZone.classList.remove('has-file');
             fileInfo.classList.remove('active');
+            videoInfo.style.display = 'none';
+            codecWarning.classList.remove('active');
             presetsSection.style.display = 'none';
             hideOutput();
             hideError();

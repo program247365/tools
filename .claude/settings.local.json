@@ -3,7 +3,10 @@
     "allow": [
       "WebFetch(domain:fumadocs.dev)",
       "WebSearch",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(make dev:*)",
+      "Bash(npm run postinstall:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

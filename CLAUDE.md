@@ -165,9 +165,37 @@ This project uses Tailwind CSS v4 with important configuration differences from 
 
 ## TypeScript Configuration
 
+**This is a TypeScript project. NEVER use `any` type except under very special circumstances.**
+
 - **Path Alias**: `@/*` maps to root directory
 - **Module Resolution**: Uses `bundler` mode for Next.js
 - **JSX**: Uses `react-jsx` transform
+- **Type Safety**: Always use proper TypeScript types and interfaces
+  - Create custom type definitions in `lib/types.ts` when needed
+  - Use type assertions (`as CustomType`) sparingly and only when necessary
+  - Prefer `unknown` over `any` when type is truly unknown
+  - Use proper generic types when working with Fumadocs APIs
+
+### Custom Frontmatter and Type Safety
+
+When working with custom MDX frontmatter fields (beyond the default `title` and `description`):
+
+1. Define custom fields in `lib/types.ts`:
+   ```typescript
+   export interface CustomFrontmatter {
+     tags?: string;
+     date?: string | Date;
+   }
+   ```
+
+2. Access custom frontmatter via `_exports.frontmatter` pattern:
+   ```typescript
+   const pageData = page.data as any; // Only acceptable any usage - Fumadocs internal API
+   const frontmatter = pageData._exports?.frontmatter as CustomFrontmatter | undefined;
+   const tags = frontmatter?.tags;
+   ```
+
+3. **Note**: Using `any` for `page.data` is acceptable here because Fumadocs doesn't export proper types for the internal `_exports` structure. However, immediately cast the frontmatter to your custom type.
 
 ## Adding a New Tool
 
